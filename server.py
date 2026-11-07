@@ -7,7 +7,7 @@ import hmac
 from pathlib import Path
 
 from fastapi import Body, FastAPI, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 
 from access import AdminConfig, open_config
 from directory import SUPABASE_URL, AdminError, SubscriptionDirectory, assert_service_role
@@ -34,6 +34,10 @@ def create_app(config: AdminConfig, directory: SubscriptionDirectory) -> FastAPI
     @app.get("/", response_class=HTMLResponse)
     def home() -> str:
         return PAGE.read_text(encoding="utf-8")
+
+    @app.get("/logo.png")
+    def logo() -> FileResponse:
+        return FileResponse(PAGE.with_name("logo.png"), media_type="image/png")
 
     @app.get("/computers/{machine_id}/logs", response_class=HTMLResponse)
     def computer_logs(machine_id: str) -> str:

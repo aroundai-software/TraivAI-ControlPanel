@@ -8,9 +8,13 @@
     :root { color-scheme: light; }
     body { margin: 0; font: 15px/1.45 "Segoe UI", sans-serif; background: #eef3f5; color: #16323c; }
     main { max-width: 1080px; margin: 0 auto; padding: 32px 20px 56px; }
-    .kicker { margin: 0 0 6px; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #0f6a74; }
+    .brand { display: flex; align-items: center; gap: 8px; position: sticky; top: 0; z-index: 4; background: #eef3f5; padding: 10px 0 8px; }
+    .brand img { width: 28px; height: 28px; border-radius: 8px; display: block; }
+    .kicker { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #0f6a74; }
     h1 { font-size: 28px; letter-spacing: -0.02em; margin: 0; }
     p.lead { color: #5c727a; margin: 8px 0 0; max-width: 520px; }
+    #intro { max-height: 160px; overflow: hidden; transition: max-height 0.18s ease, opacity 0.18s ease; }
+    #intro.away { max-height: 0; opacity: 0; }
     form.card, .setup { background: white; border: 1px solid #d5dee4; border-radius: 14px; padding: 20px; max-width: 420px; box-shadow: 0 8px 24px rgba(22, 50, 60, 0.06); }
     label { display: block; font-size: 13px; margin-bottom: 6px; }
     input { width: 100%; box-sizing: border-box; border: 1px solid #d5dee4; border-radius: 8px; padding: 8px 10px; font: inherit; background: white; }
@@ -20,7 +24,7 @@
     .row { display: flex; gap: 8px; align-items: end; flex-wrap: wrap; margin-top: 12px; }
     .error { color: #9c3b3b; font-size: 13px; margin: 8px 0 0; }
     .error:empty { display: none; }
-    .toolbar { display: flex; justify-content: space-between; gap: 16px; align-items: center; margin: 22px 0 14px; }
+    .toolbar { display: flex; justify-content: space-between; gap: 16px; align-items: center; position: sticky; top: 46px; z-index: 3; background: #eef3f5; margin: 14px 0 10px; padding: 6px 0 8px; }
     .toolbar p { margin: 0; color: #5c727a; }
     .toolbar input { width: 240px; }
     #grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(440px, 1fr)); gap: 14px; }
@@ -52,6 +56,7 @@
       main { padding: 20px 14px 32px; }
       .toolbar { align-items: stretch; flex-direction: column; margin-top: 16px; }
       .toolbar input { width: 100%; }
+      #grid { grid-template-columns: minmax(0, 1fr); padding-inline: 12px; }
       .card { padding: 12px; }
       .ends { margin-top: 8px; font-size: 16px; }
       .actions { flex-direction: column; align-items: stretch; margin-top: 0; padding-top: 8px; }
@@ -62,10 +67,15 @@
 </head>
 <body>
   <main>
-    <p class="kicker">Traiv AI</p>
+    <div class="brand">
+      <img src="/logo.png" alt="" width="28" height="28">
+      <p class="kicker">Traiv AI</p>
+    </div>
     <a id="back" class="back" href="/" hidden aria-label="Back"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M14.5 5.5 L8 12 l6.5 6.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
-    <h1 id="title">Subscriptions</h1>
-    <p class="lead" id="lead">Manage the license and posting status for every computer.</p>
+    <div id="intro">
+      <h1 id="title">Subscriptions</h1>
+      <p class="lead" id="lead">Manage the license and posting status for every computer.</p>
+    </div>
     <div id="gate"></div>
     <div id="list"></div>
   </main>
@@ -396,6 +406,12 @@
       panel.innerHTML = renderLogs(rows);
       list.appendChild(panel);
     }
+
+    window.addEventListener("scroll", () => {
+      const intro = document.getElementById("intro");
+      if (!intro) return;
+      intro.classList.toggle("away", !logsMachine() && window.scrollY > 24);
+    }, { passive: true });
 
     openPage();
   </script>
