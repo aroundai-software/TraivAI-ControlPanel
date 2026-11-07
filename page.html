@@ -18,23 +18,24 @@
     button.quiet { background: white; color: #16323c; border: 1px solid #d5dee4; }
     button:disabled { opacity: 0.55; cursor: default; }
     .row { display: flex; gap: 8px; align-items: end; flex-wrap: wrap; margin-top: 12px; }
-    .error { color: #9c3b3b; font-size: 13px; min-height: 1.2em; margin: 8px 0 0; }
+    .error { color: #9c3b3b; font-size: 13px; margin: 8px 0 0; }
+    .error:empty { display: none; }
     .toolbar { display: flex; justify-content: space-between; gap: 16px; align-items: center; margin: 22px 0 14px; }
     .toolbar p { margin: 0; color: #5c727a; }
     .toolbar input { width: 240px; }
     #grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(440px, 1fr)); gap: 14px; }
-    .card { background: white; border: 1px solid #d5dee4; border-radius: 14px; padding: 16px 16px 14px; box-shadow: 0 8px 24px rgba(22, 50, 60, 0.05); display: flex; flex-direction: column; }
+    .card { background: white; border: 1px solid #d5dee4; border-radius: 14px; padding: 14px 14px 12px; box-shadow: 0 8px 24px rgba(22, 50, 60, 0.05); display: flex; flex-direction: column; }
     .head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
     .card h2 { font-size: 16px; margin: 0; word-break: break-word; }
     .pill { font-size: 12px; font-weight: 600; border-radius: 999px; padding: 3px 9px; white-space: nowrap; }
     .pill.active { background: #e7f6ee; color: #1f7a4d; }
     .pill.stopped { background: #f8efe3; color: #8a5a12; }
     .pill.ended { background: #f8e8e8; color: #9c3b3b; }
-    .ends { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; margin: 16px 0 0; }
+    .ends { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; margin: 12px 0 0; }
     .remain { color: #5c727a; font-size: 13px; margin: 2px 0 0; }
     .facts { color: #5c727a; font-size: 13px; margin: 2px 0 0; }
-    .remain + .facts { margin-top: 14px; }
-    .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; margin-top: auto; padding-top: 16px; }
+    .remain + .facts { margin-top: 8px; }
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; margin-top: auto; padding-top: 12px; }
     .actions label { flex: 1 1 140px; margin: 0; min-width: 140px; }
     .actions input { width: 100%; height: 38px; }
     .btns { display: flex; gap: 8px; flex: 0 0 auto; }
@@ -48,10 +49,14 @@
     .log-head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; color: #5c727a; font-size: 12px; }
     .code { color: #16323c; font-weight: 600; letter-spacing: 0.02em; }
     @media (max-width: 640px) {
-      .toolbar { align-items: stretch; flex-direction: column; }
+      main { padding: 20px 14px 32px; }
+      .toolbar { align-items: stretch; flex-direction: column; margin-top: 16px; }
       .toolbar input { width: 100%; }
-      .actions { flex-direction: column; align-items: stretch; }
-      .actions label, .btns { width: 100%; }
+      .card { padding: 12px; }
+      .ends { margin-top: 8px; font-size: 16px; }
+      .actions { flex-direction: column; align-items: stretch; margin-top: 0; padding-top: 8px; }
+      .actions label { flex: 0 0 auto; width: 100%; min-width: 0; }
+      .btns { width: 100%; }
     }
   </style>
 </head>
