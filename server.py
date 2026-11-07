@@ -35,6 +35,10 @@ def create_app(config: AdminConfig, directory: SubscriptionDirectory) -> FastAPI
     def home() -> str:
         return PAGE.read_text(encoding="utf-8")
 
+    @app.get("/computers/{machine_id}/logs", response_class=HTMLResponse)
+    def computer_logs(machine_id: str) -> str:
+        return PAGE.read_text(encoding="utf-8")
+
     @app.get("/api/session")
     def session(request: Request) -> dict:
         return {
@@ -88,6 +92,15 @@ def create_app(config: AdminConfig, directory: SubscriptionDirectory) -> FastAPI
     @app.post("/api/pcs/{machine_id}/resume")
     def resume(machine_id: str, request: Request) -> JSONResponse:
         return _change(request, lambda: directory.resume(machine_id))
+
+    @app.get("/api/pcs/{machine_id}/logs")
+    def logs(machine_id: str, request: Request) -> JSONResponse:
+        _require(request)
+        try:
+            rows = directory.logs(machine_id)
+        except AdminError as exc:
+            return JSONResponse(status_code=exc.status, content={"message": exc.message})
+        return JSONResponse({"logs": rows})
 
     def _require(request: Request) -> None:
         if not _signed_in(request):

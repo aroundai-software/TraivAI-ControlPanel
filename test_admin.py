@@ -89,17 +89,67 @@ def test_renew_stop_and_resume_use_the_existing_rows():
         httpx.Client(transport=httpx.MockTransport(handler)),
     )
     try:
-        directory.renew("pc-1111-2222", "2026-12-01")
+        directory.renew("pc-1111-2222", "2027-06-01")
     except AdminError as exc:
         assert exc.message == "The new end date must be later than the current end"
     else:
-        raise AssertionError("early date was accepted")
+        raise AssertionError("the database refusal was ignored")
+    shortened = directory.renew("pc-1111-2222", "2026-12-01")
+    assert shortened["ends"] == "2026-12-01"
+    assert sent[-1][0] == "PATCH"
+    assert sent[-1][2] == {"expires_at": "2026-12-01"}
     stopped = directory.stop("pc-1111-2222")
     assert stopped["stopped"] is True
     assert sent[1][0] == "POST"
     assert sent[1][2]["install_id"] == "abc"
     assert sent[-1][0] == "PATCH"
     assert sent[-1][2] == {"suspended": True}
+
+
+def test_logs_are_read_for_one_computer_only():
+    seen = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["path"] = request.url.path
+        seen["query"] = str(request.url.query)
+        if "install_logs" not in request.url.path:
+            return httpx.Response(404, json={"message": "no"})
+        return httpx.Response(
+            200,
+            json=[
+                {
+                    "logged_at": "2026-11-07T10:00:00Z",
+                    "level": "error",
+                    "event": "tally_post",
+                    "message": "Tally could not be reached",
+                    "detail": "Tally could not be reached. 127.0.0.1:9000 refused",
+                }
+            ],
+        )
+
+    directory = SubscriptionDirectory(
+        "https://example.test",
+        lambda: _key("service_role"),
+        httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+    rows = directory.logs("pc-1111-2222")
+    assert "machine_id=eq.pc-1111-2222" in seen["query"]
+    assert "order=logged_at.desc" in seen["query"]
+    assert rows[0]["area"] == "Tally"
+    assert rows[0]["level"] == "error"
+    assert "9000" in rows[0]["detail"]
+
+    missing = SubscriptionDirectory(
+        "https://example.test",
+        lambda: _key("service_role"),
+        httpx.Client(transport=httpx.MockTransport(lambda request: httpx.Response(404, json={"message": "Could not find the table public.install_logs in the schema cache"}))),
+    )
+    try:
+        missing.logs("pc-1111-2222")
+    except AdminError as exc:
+        assert exc.message == "Logs are not available yet."
+    else:
+        raise AssertionError("a missing log table was treated as success")
 
 
 def test_a_hosted_link_accepts_another_computer(monkeypatch):
@@ -129,6 +179,9 @@ def test_the_page_hides_the_list_until_sign_in(tmp_path):
     client = TestClient(create_app(config, directory))
     refused = client.get("/api/pcs")
     assert refused.status_code == 401
+    logs_page = client.get("/computers/pc-1111-2222/logs")
+    assert logs_page.status_code == 200
+    assert 'aria-label="Back"' in logs_page.text
     wrong = client.post("/api/login", json={"password": "nope"})
     assert wrong.status_code == 401
     signed = client.post("/api/login", json={"password": password})

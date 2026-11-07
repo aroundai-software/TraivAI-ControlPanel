@@ -6,41 +6,91 @@
   <title>Traiv AI subscriptions</title>
   <style>
     :root { color-scheme: light; }
-    body { margin: 0; font: 15px/1.45 "Segoe UI", sans-serif; background: #f3f6f8; color: #16323c; }
-    main { max-width: 880px; margin: 0 auto; padding: 28px 16px 48px; }
-    h1 { font-size: 24px; margin: 0 0 6px; }
-    p.lead { color: #5c727a; margin: 0 0 18px; }
-    form, .card, .setup { background: white; border: 1px solid #d5dee4; border-radius: 12px; padding: 16px; }
+    body { margin: 0; font: 15px/1.45 "Segoe UI", sans-serif; background: #eef3f5; color: #16323c; }
+    main { max-width: 1080px; margin: 0 auto; padding: 32px 20px 56px; }
+    .kicker { margin: 0 0 6px; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #0f6a74; }
+    h1 { font-size: 28px; letter-spacing: -0.02em; margin: 0; }
+    p.lead { color: #5c727a; margin: 8px 0 0; max-width: 520px; }
+    form.card, .setup { background: white; border: 1px solid #d5dee4; border-radius: 14px; padding: 20px; max-width: 420px; box-shadow: 0 8px 24px rgba(22, 50, 60, 0.06); }
     label { display: block; font-size: 13px; margin-bottom: 6px; }
-    input { width: 100%; box-sizing: border-box; border: 1px solid #d5dee4; border-radius: 8px; padding: 8px 10px; font: inherit; }
+    input { width: 100%; box-sizing: border-box; border: 1px solid #d5dee4; border-radius: 8px; padding: 8px 10px; font: inherit; background: white; }
     button { background: #0f6a74; color: white; border: 0; border-radius: 8px; padding: 8px 14px; font: inherit; cursor: pointer; }
     button.quiet { background: white; color: #16323c; border: 1px solid #d5dee4; }
     button:disabled { opacity: 0.55; cursor: default; }
     .row { display: flex; gap: 8px; align-items: end; flex-wrap: wrap; margin-top: 12px; }
-    .error { color: #9c3b3b; font-size: 13px; min-height: 1.2em; }
-    .card { margin-top: 12px; }
-    .card h2 { font-size: 18px; margin: 0; }
-    .meta { color: #5c727a; font-size: 13px; margin: 6px 0 0; }
-    .stopped { display: inline-block; margin-left: 8px; color: #8a5a12; font-size: 12px; font-weight: 600; }
-    .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: end; }
-    .actions label { flex: 1 1 160px; }
+    .error { color: #9c3b3b; font-size: 13px; min-height: 1.2em; margin: 8px 0 0; }
+    .toolbar { display: flex; justify-content: space-between; gap: 16px; align-items: center; margin: 22px 0 14px; }
+    .toolbar p { margin: 0; color: #5c727a; }
+    .toolbar input { width: 240px; }
+    #grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(440px, 1fr)); gap: 14px; }
+    .card { background: white; border: 1px solid #d5dee4; border-radius: 14px; padding: 16px 16px 14px; box-shadow: 0 8px 24px rgba(22, 50, 60, 0.05); display: flex; flex-direction: column; }
+    .head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+    .card h2 { font-size: 16px; margin: 0; word-break: break-word; }
+    .pill { font-size: 12px; font-weight: 600; border-radius: 999px; padding: 3px 9px; white-space: nowrap; }
+    .pill.active { background: #e7f6ee; color: #1f7a4d; }
+    .pill.stopped { background: #f8efe3; color: #8a5a12; }
+    .pill.ended { background: #f8e8e8; color: #9c3b3b; }
+    .ends { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; margin: 16px 0 0; }
+    .remain { color: #5c727a; font-size: 13px; margin: 2px 0 0; }
+    .facts { color: #5c727a; font-size: 13px; margin: 2px 0 0; }
+    .remain + .facts { margin-top: 14px; }
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; margin-top: auto; padding-top: 16px; }
+    .actions label { flex: 1 1 140px; margin: 0; min-width: 140px; }
+    .actions input { width: 100%; height: 38px; }
+    .btns { display: flex; gap: 8px; flex: 0 0 auto; }
+    .actions button, .btns a { white-space: nowrap; height: 38px; padding: 0 14px; box-sizing: border-box; }
+    .btns a { display: inline-flex; align-items: center; background: white; color: #16323c; border: 1px solid #d5dee4; border-radius: 8px; text-decoration: none; }
+    a.back { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; margin: 0 0 14px; background: white; color: #16323c; border: 1px solid #d5dee4; border-radius: 999px; text-decoration: none; }
+    a.back[hidden] { display: none; }
+    .logpage { display: flex; flex-direction: column; gap: 10px; margin-top: 22px; }
+    .logpage .log { background: white; border: 1px solid #d5dee4; border-radius: 14px; padding: 14px 16px; box-shadow: 0 8px 24px rgba(22, 50, 60, 0.05); }
+    .log p { margin: 4px 0 0; }
+    .log-head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; color: #5c727a; font-size: 12px; }
+    .code { color: #16323c; font-weight: 600; letter-spacing: 0.02em; }
+    @media (max-width: 640px) {
+      .toolbar { align-items: stretch; flex-direction: column; }
+      .toolbar input { width: 100%; }
+      .actions { flex-direction: column; align-items: stretch; }
+      .actions label, .btns { width: 100%; }
+    }
   </style>
 </head>
 <body>
   <main>
-    <h1>Subscriptions</h1>
-    <p class="lead">Each computer running Traiv AI. Renew or stop that computer here. The open app updates on its next check.</p>
+    <p class="kicker">Traiv AI</p>
+    <a id="back" class="back" href="/" hidden aria-label="Back"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M14.5 5.5 L8 12 l6.5 6.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+    <h1 id="title">Subscriptions</h1>
+    <p class="lead" id="lead">Manage the license and posting status for every computer.</p>
     <div id="gate"></div>
     <div id="list"></div>
   </main>
   <script>
     const gate = document.getElementById("gate");
     const list = document.getElementById("list");
+    let postsVisible = false;
+    let computers = [];
+
+    function indiaToday() {
+      return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+    }
+
+    function endDay(value) {
+      const text = String(value || "").slice(0, 10);
+      return /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : "";
+    }
+
+    function daysLeft(value) {
+      const end = endDay(value);
+      if (!end) return null;
+      const start = Date.parse(indiaToday() + "T00:00:00Z");
+      const finish = Date.parse(end + "T00:00:00Z");
+      return Math.round((finish - start) / 86400000);
+    }
 
     function day(value) {
-      if (!value) return "No end date";
-      const parts = String(value).slice(0, 10).split("-");
-      if (parts.length !== 3) return value;
+      const end = endDay(value);
+      if (!end) return "No end date";
+      const parts = end.split("-");
       const date = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
       return date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
     }
@@ -50,6 +100,21 @@
       const date = new Date(value);
       if (Number.isNaN(date.getTime())) return value;
       return date.toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" });
+    }
+
+    function remainText(left) {
+      if (left === null) return "No end date";
+      if (left < 0) return "Ended";
+      if (left === 0) return "Ends today";
+      if (left === 1) return "1 day left";
+      return left + " days left";
+    }
+
+    function stateOf(pc) {
+      if (pc.stopped) return { name: "Stopped", kind: "stopped" };
+      const left = daysLeft(pc.ends);
+      if (left !== null && left < 0) return { name: "Ended", kind: "ended" };
+      return { name: "Active", kind: "active" };
     }
 
     async function send(url, body) {
@@ -68,7 +133,7 @@
       const box = document.createElement("form");
       box.className = "card";
       const note = firstPassword
-        ? `<p class="meta">Password for this screen: <strong>${escapeText(firstPassword)}</strong></p>`
+        ? `<p class="facts">Password for this screen: <strong>${escapeText(firstPassword)}</strong></p>`
         : "";
       box.innerHTML = `${note}<label>Password<input id="password" type="password" autocomplete="current-password"></label><div class="row"><button type="submit">Open</button></div><p class="error" id="login-error"></p>`;
       box.addEventListener("submit", async (event) => {
@@ -77,7 +142,7 @@
         error.textContent = "";
         try {
           await send("/api/login", { password: box.querySelector("#password").value });
-          await showList();
+          await openPage();
         } catch (err) {
           error.textContent = err.message;
         }
@@ -88,14 +153,14 @@
     function keyBox() {
       const box = document.createElement("form");
       box.className = "setup";
-      box.innerHTML = `<p>Paste the service role key from the Supabase project Traiv AI already uses. It stays on this computer and is not put in the installer.</p><label>Service role key<input id="key" type="password" autocomplete="off"></label><div class="row"><button type="submit">Save key</button></div><p class="error" id="key-error"></p>`;
+      box.innerHTML = `<p class="facts">Paste the service role key from the Supabase project Traiv AI already uses. It stays on this computer and is not put in the installer.</p><label>Service role key<input id="key" type="password" autocomplete="off"></label><div class="row"><button type="submit">Save key</button></div><p class="error" id="key-error"></p>`;
       box.addEventListener("submit", async (event) => {
         event.preventDefault();
         const error = box.querySelector("#key-error");
         error.textContent = "";
         try {
           await send("/api/key", { key: box.querySelector("#key").value });
-          await showList();
+          await openPage();
         } catch (err) {
           error.textContent = err.message;
         }
@@ -103,40 +168,77 @@
       return box;
     }
 
-    function card(pc, postsVisible) {
+    function card(pc) {
       const box = document.createElement("article");
       box.className = "card";
+      box.dataset.id = pc.machine_id;
+      const state = stateOf(pc);
       const post = postsVisible
-        ? (pc.last_invoice ? `${escapeText(pc.last_invoice)} · ${when(pc.last_post)}` : "No post yet")
-        : "Last posts appear after the database update.";
+        ? (pc.last_invoice ? `${escapeText(pc.last_invoice)} on ${when(pc.last_post)}` : "No bill sent yet")
+        : "Not available yet";
+      const current = endDay(pc.ends);
       box.innerHTML = `
-        <h2>${escapeText(pc.name)}${pc.stopped ? '<span class="stopped">Stopped</span>' : ""}</h2>
-        <p class="meta">Ends ${day(pc.ends)}</p>
-        <p class="meta">Last post: ${post}</p>
-        <p class="meta">Last check-in: ${when(pc.last_seen)}</p>
-        <p class="meta">${pc.stopped ? "A new end date does not turn posting back on." : "Saving reaches the open app on its next check."}</p>
+        <div class="head">
+          <h2>${escapeText(pc.name)}</h2>
+          <span class="pill ${state.kind}">${state.name}</span>
+        </div>
+        <p class="ends">License ends: ${day(pc.ends)}</p>
+        <p class="remain">${remainText(daysLeft(pc.ends))}${pc.stopped ? " · posting is off" : ""}</p>
+        <p class="facts">Last online: ${when(pc.last_seen)}</p>
+        <p class="facts">Last bill sent to Tally: ${post}</p>
         <div class="actions">
-          <label>New end date<input type="date" data-ends></label>
-          <button type="button" data-renew>Renew</button>
-          ${pc.stopped ? '<button type="button" class="quiet" data-resume>Turn posting on</button>' : '<button type="button" class="quiet" data-stop>Stop</button>'}
+          <label>End date<input type="date" data-ends value="${current}"></label>
+          <div class="btns">
+            <button type="button" data-renew>Save date</button>
+            ${pc.stopped ? '<button type="button" class="quiet" data-resume>Turn posting on</button>' : '<button type="button" class="quiet" data-stop>Stop</button>'}
+            <a href="/computers/${encodeURIComponent(pc.machine_id)}/logs">View logs</a>
+          </div>
         </div>
         <p class="error" data-error></p>`;
-      const error = box.querySelector("[data-error]");
-      box.querySelector("[data-renew]").addEventListener("click", () => act(`/api/pcs/${encodeURIComponent(pc.machine_id)}/renew`, { ends: box.querySelector("[data-ends]").value }, error));
+      box.querySelector("[data-renew]").addEventListener("click", () => act(box, `/api/pcs/${encodeURIComponent(pc.machine_id)}/renew`, { ends: box.querySelector("[data-ends]").value }));
       const stop = box.querySelector("[data-stop]");
-      if (stop) stop.addEventListener("click", () => act(`/api/pcs/${encodeURIComponent(pc.machine_id)}/stop`, {}, error));
+      if (stop) stop.addEventListener("click", () => act(box, `/api/pcs/${encodeURIComponent(pc.machine_id)}/stop`, {}));
       const resume = box.querySelector("[data-resume]");
-      if (resume) resume.addEventListener("click", () => act(`/api/pcs/${encodeURIComponent(pc.machine_id)}/resume`, {}, error));
+      if (resume) resume.addEventListener("click", () => act(box, `/api/pcs/${encodeURIComponent(pc.machine_id)}/resume`, {}));
       return box;
     }
 
-    async function act(url, body, error) {
+    function errorCode(row) {
+      const source = `${row.detail || ""} ${row.message || ""}`;
+      const match = source.match(/\b([A-Z][A-Z0-9_]{2,})\s*:/);
+      return match ? match[1] : "";
+    }
+
+    function renderLogs(rows) {
+      if (!rows.length) return `<p class="facts">No warnings or errors from this computer yet.</p>`;
+      const items = rows.map((row) => {
+        const kind = row.level === "error" ? "ended" : "stopped";
+        const name = row.level === "error" ? "Error" : "Warning";
+        const text = row.message || row.detail;
+        const code = errorCode(row);
+        const codeMark = code ? `<span class="code">${escapeText(code)}</span>` : "";
+        return `<div class="log"><div class="log-head"><span class="pill ${kind}">${name}</span>${codeMark}<span>${escapeText(row.area)}</span><span>${when(row.when)}</span></div><p>${escapeText(text)}</p></div>`;
+      }).join("");
+      const note = rows.length === 40 ? `<p class="facts">Showing the latest 40.</p>` : "";
+      return items + note;
+    }
+
+    async function act(box, url, body) {
+      const error = box.querySelector("[data-error]");
+      const buttons = box.querySelectorAll("button");
       error.textContent = "";
+      buttons.forEach((button) => { button.disabled = true; });
       try {
-        await send(url, body);
-        await showList();
+        const data = await send(url, body);
+        if (!data.pc) return;
+        postsVisible = data.posts_visible === true;
+        const index = computers.findIndex((item) => item.machine_id === data.pc.machine_id);
+        if (index >= 0) computers[index] = data.pc;
+        box.replaceWith(card(data.pc));
+        writeSummary();
       } catch (err) {
         error.textContent = err.message;
+        buttons.forEach((button) => { button.disabled = false; });
       }
     }
 
@@ -144,10 +246,51 @@
       return String(value).replace(/[&<>"']/g, (mark) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[mark]));
     }
 
+    function writeSummary() {
+      const summary = document.getElementById("summary");
+      if (!summary) return;
+      const stopped = computers.filter((pc) => pc.stopped).length;
+      const count = computers.length === 1 ? "1 computer" : computers.length + " computers";
+      summary.textContent = count + " · " + stopped + " stopped";
+    }
+
+    function renderGrid() {
+      const grid = document.getElementById("grid");
+      const query = (document.getElementById("search").value || "").trim().toLowerCase();
+      const shown = computers
+        .filter((pc) => pc.name.toLowerCase().includes(query))
+        .slice()
+        .sort((a, b) => (endDay(a.ends) || "9999-99-99").localeCompare(endDay(b.ends) || "9999-99-99"));
+      grid.innerHTML = "";
+      if (!shown.length) {
+        const note = document.createElement("p");
+        note.className = "facts";
+        note.textContent = "No computer matches.";
+        grid.appendChild(note);
+        return;
+      }
+      for (const pc of shown) grid.appendChild(card(pc));
+    }
+
+    function mountList() {
+      list.innerHTML = "";
+      const bar = document.createElement("div");
+      bar.className = "toolbar";
+      bar.innerHTML = `<p id="summary"></p><input id="search" type="search" placeholder="Find a computer" autocomplete="off">`;
+      const grid = document.createElement("div");
+      grid.id = "grid";
+      list.appendChild(bar);
+      list.appendChild(grid);
+      bar.querySelector("#search").addEventListener("input", renderGrid);
+      writeSummary();
+      renderGrid();
+    }
+
     async function showList() {
       const session = await fetch("/api/session").then((response) => response.json());
       gate.innerHTML = "";
       list.innerHTML = "";
+      computers = [];
       if (!session.signed_in) {
         loginBox(session.first_password || "");
         return;
@@ -173,17 +316,83 @@
         if (!session.hosted && (response.status === 503 || response.status === 400)) list.appendChild(keyBox());
         return;
       }
-      if (!data.pcs.length) {
+      postsVisible = data.posts_visible === true;
+      computers = data.pcs || [];
+      if (!computers.length) {
         const note = document.createElement("p");
-        note.className = "meta";
+        note.className = "facts";
         note.textContent = "No computer has opened Traiv AI yet.";
         list.appendChild(note);
         return;
       }
-      for (const pc of data.pcs) list.appendChild(card(pc, data.posts_visible));
+      mountList();
     }
 
-    showList();
+    function logsMachine() {
+      const match = location.pathname.match(/^\/computers\/([^/]+)\/logs\/?$/);
+      return match ? decodeURIComponent(match[1]) : "";
+    }
+
+    function openPage() {
+      const machineId = logsMachine();
+      if (machineId) return showComputerLogs(machineId);
+      return showList();
+    }
+
+    async function showComputerLogs(machineId) {
+      const session = await fetch("/api/session").then((response) => response.json());
+      gate.innerHTML = "";
+      list.innerHTML = "";
+      document.getElementById("back").hidden = false;
+      document.getElementById("title").textContent = "Logs";
+      document.getElementById("lead").textContent = "Warnings and errors from this computer.";
+      document.title = "Traiv AI logs";
+      if (!session.signed_in) {
+        loginBox(session.first_password || "");
+        return;
+      }
+      if (!session.configured) {
+        if (session.hosted) {
+          const note = document.createElement("p");
+          note.className = "error";
+          note.textContent = "Set SUPABASE_SERVICE_ROLE_KEY in the Vercel project settings.";
+          list.appendChild(note);
+          return;
+        }
+        list.appendChild(keyBox());
+        return;
+      }
+      const [pcsResponse, logsResponse] = await Promise.all([
+        fetch("/api/pcs"),
+        fetch(`/api/pcs/${encodeURIComponent(machineId)}/logs`),
+      ]);
+      const pcsData = await pcsResponse.json().catch(() => ({}));
+      const logsData = await logsResponse.json().catch(() => ({}));
+      if (!pcsResponse.ok) {
+        const note = document.createElement("p");
+        note.className = "error";
+        note.textContent = pcsData.message || "The list could not be read.";
+        list.appendChild(note);
+        if (!session.hosted && (pcsResponse.status === 503 || pcsResponse.status === 400)) list.appendChild(keyBox());
+        return;
+      }
+      const pc = (pcsData.pcs || []).find((item) => item.machine_id === machineId);
+      document.getElementById("title").textContent = pc ? pc.name : "This computer";
+      if (!logsResponse.ok) {
+        const note = document.createElement("p");
+        note.className = "error";
+        note.textContent = logsData.message || "The logs could not be read.";
+        list.appendChild(note);
+        return;
+      }
+      const rows = logsData.logs || [];
+      const panel = document.createElement("div");
+      panel.className = "logpage";
+      panel.innerHTML = renderLogs(rows);
+      list.appendChild(panel);
+    }
+
+    openPage();
   </script>
 </body>
 </html>

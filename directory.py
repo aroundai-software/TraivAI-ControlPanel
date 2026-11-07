@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import base64
 import json
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 
 import httpx
 
@@ -43,6 +43,14 @@ class SubscriptionDirectory:
         machine = _machine(machine_id)
         day = _day(ends)
         row = self._one(machine)
+        chosen = date.fromisoformat(day)
+        if chosen < _today():
+            raise AdminError("The new end date must be today or later.", 400)
+        current = str(row.get("expires_at") or "")[:10]
+        if current and day == current:
+            raise AdminError("That is already the end date.", 400)
+        if current and day < current:
+            return self._set_end(row, day)
         response = self._send(
             "POST",
             "/rest/v1/install_periods",
@@ -57,6 +65,44 @@ class SubscriptionDirectory:
 
     def resume(self, machine_id: str) -> dict:
         return self._set_stopped(_machine(machine_id), False)
+
+    def logs(self, machine_id: str) -> list[dict]:
+        machine = _machine(machine_id)
+        response = self._send(
+            "GET",
+            "/rest/v1/install_logs",
+            None,
+            params={
+                "select": "logged_at,level,event,message,detail",
+                "machine_id": f"eq.{machine}",
+                "order": "logged_at.desc",
+                "limit": "40",
+            },
+        )
+        if response.status_code == 404 or _missing_logs(response):
+            raise AdminError("Logs are not available yet.", 502)
+        if response.status_code >= 400:
+            raise AdminError(_database_message(response), 502)
+        body = response.json()
+        if not isinstance(body, list):
+            raise AdminError("The logs could not be read.", 502)
+        return [_log(row) for row in body if isinstance(row, dict)]
+
+    def _set_end(self, row: dict, day: str) -> dict:
+        response = self._send(
+            "PATCH",
+            "/rest/v1/installs",
+            {"expires_at": day},
+            params={"id": f"eq.{row['id']}"},
+        )
+        if response.status_code >= 400:
+            raise AdminError(_database_message(response), 400)
+        updated = response.json()
+        body = updated[0] if isinstance(updated, list) and updated else dict(row)
+        body["expires_at"] = day
+        if not body.get("machine_id"):
+            body["machine_id"] = row.get("machine_id")
+        return _pc(body)
 
     def _set_stopped(self, machine: str, stopped: bool) -> dict:
         row = self._one(machine)
@@ -144,11 +190,50 @@ def _machine(value: str) -> str:
     return text
 
 
+def _today() -> date:
+    return datetime.now(timezone(timedelta(hours=5, minutes=30))).date()
+
+
 def _day(value: str) -> str:
     try:
         return date.fromisoformat((value or "").strip()).isoformat()
     except ValueError:
         raise AdminError("Choose an end date.", 400) from None
+
+
+_AREAS = {
+    "watcher": "File watcher",
+    "license": "License",
+    "tally_post": "Tally",
+    "capture": "Reading a bill",
+    "logging": "App",
+}
+
+
+def _missing_logs(response: httpx.Response) -> bool:
+    if response.status_code not in {400, 404}:
+        return False
+    text = response.text.lower()
+    return "install_logs" in text and ("does not exist" in text or "could not find" in text or "schema cache" in text)
+
+
+def _log(row: dict) -> dict:
+    event = str(row.get("event") or "").strip()
+    level = str(row.get("level") or "").strip().lower()
+    if level not in {"warning", "error"}:
+        level = "warning"
+    message = str(row.get("message") or "").strip()
+    detail = str(row.get("detail") or "").strip()
+    if detail == message:
+        detail = ""
+    area = _AREAS.get(event, event.replace("_", " ").strip() or "App")
+    return {
+        "when": row.get("logged_at") or "",
+        "level": level,
+        "area": area,
+        "message": message,
+        "detail": detail,
+    }
 
 
 def _pc(row: dict) -> dict:
