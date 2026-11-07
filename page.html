@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Traiv AI subscriptions</title>
+  <style>
+    :root { color-scheme: light; }
+    body { margin: 0; font: 15px/1.45 "Segoe UI", sans-serif; background: #f3f6f8; color: #16323c; }
+    main { max-width: 880px; margin: 0 auto; padding: 28px 16px 48px; }
+    h1 { font-size: 24px; margin: 0 0 6px; }
+    p.lead { color: #5c727a; margin: 0 0 18px; }
+    form, .card, .setup { background: white; border: 1px solid #d5dee4; border-radius: 12px; padding: 16px; }
+    label { display: block; font-size: 13px; margin-bottom: 6px; }
+    input { width: 100%; box-sizing: border-box; border: 1px solid #d5dee4; border-radius: 8px; padding: 8px 10px; font: inherit; }
+    button { background: #0f6a74; color: white; border: 0; border-radius: 8px; padding: 8px 14px; font: inherit; cursor: pointer; }
+    button.quiet { background: white; color: #16323c; border: 1px solid #d5dee4; }
+    button:disabled { opacity: 0.55; cursor: default; }
+    .row { display: flex; gap: 8px; align-items: end; flex-wrap: wrap; margin-top: 12px; }
+    .error { color: #9c3b3b; font-size: 13px; min-height: 1.2em; }
+    .card { margin-top: 12px; }
+    .card h2 { font-size: 18px; margin: 0; }
+    .meta { color: #5c727a; font-size: 13px; margin: 6px 0 0; }
+    .stopped { display: inline-block; margin-left: 8px; color: #8a5a12; font-size: 12px; font-weight: 600; }
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: end; }
+    .actions label { flex: 1 1 160px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Subscriptions</h1>
+    <p class="lead">Each computer running Traiv AI. Renew or stop that computer here. The open app updates on its next check.</p>
+    <div id="gate"></div>
+    <div id="list"></div>
+  </main>
+  <script>
+    const gate = document.getElementById("gate");
+    const list = document.getElementById("list");
+
+    function day(value) {
+      if (!value) return "No end date";
+      const parts = String(value).slice(0, 10).split("-");
+      if (parts.length !== 3) return value;
+      const date = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+      return date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+    }
+
+    function when(value) {
+      if (!value) return "None yet";
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return value;
+      return date.toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" });
+    }
+
+    async function send(url, body) {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body || {}),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.message || "That could not be saved.");
+      return data;
+    }
+
+    function loginBox(firstPassword) {
+      gate.innerHTML = "";
+      const box = document.createElement("form");
+      box.className = "card";
+      const note = firstPassword
+        ? `<p class="meta">Password for this screen: <strong>${escapeText(firstPassword)}</strong></p>`
+        : "";
+      box.innerHTML = `${note}<label>Password<input id="password" type="password" autocomplete="current-password"></label><div class="row"><button type="submit">Open</button></div><p class="error" id="login-error"></p>`;
+      box.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const error = box.querySelector("#login-error");
+        error.textContent = "";
+        try {
+          await send("/api/login", { password: box.querySelector("#password").value });
+          await showList();
+        } catch (err) {
+          error.textContent = err.message;
+        }
+      });
+      gate.appendChild(box);
+    }
+
+    function keyBox() {
+      const box = document.createElement("form");
+      box.className = "setup";
+      box.innerHTML = `<p>Paste the service role key from the Supabase project Traiv AI already uses. It stays on this computer and is not put in the installer.</p><label>Service role key<input id="key" type="password" autocomplete="off"></label><div class="row"><button type="submit">Save key</button></div><p class="error" id="key-error"></p>`;
+      box.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const error = box.querySelector("#key-error");
+        error.textContent = "";
+        try {
+          await send("/api/key", { key: box.querySelector("#key").value });
+          await showList();
+        } catch (err) {
+          error.textContent = err.message;
+        }
+      });
+      return box;
+    }
+
+    function card(pc, postsVisible) {
+      const box = document.createElement("article");
+      box.className = "card";
+      const post = postsVisible
+        ? (pc.last_invoice ? `${escapeText(pc.last_invoice)} · ${when(pc.last_post)}` : "No post yet")
+        : "Last posts appear after the database update.";
+      box.innerHTML = `
+        <h2>${escapeText(pc.name)}${pc.stopped ? '<span class="stopped">Stopped</span>' : ""}</h2>
+        <p class="meta">Ends ${day(pc.ends)}</p>
+        <p class="meta">Last post: ${post}</p>
+        <p class="meta">Last check-in: ${when(pc.last_seen)}</p>
+        <p class="meta">${pc.stopped ? "A new end date does not turn posting back on." : "Saving reaches the open app on its next check."}</p>
+        <div class="actions">
+          <label>New end date<input type="date" data-ends></label>
+          <button type="button" data-renew>Renew</button>
+          ${pc.stopped ? '<button type="button" class="quiet" data-resume>Turn posting on</button>' : '<button type="button" class="quiet" data-stop>Stop</button>'}
+        </div>
+        <p class="error" data-error></p>`;
+      const error = box.querySelector("[data-error]");
+      box.querySelector("[data-renew]").addEventListener("click", () => act(`/api/pcs/${encodeURIComponent(pc.machine_id)}/renew`, { ends: box.querySelector("[data-ends]").value }, error));
+      const stop = box.querySelector("[data-stop]");
+      if (stop) stop.addEventListener("click", () => act(`/api/pcs/${encodeURIComponent(pc.machine_id)}/stop`, {}, error));
+      const resume = box.querySelector("[data-resume]");
+      if (resume) resume.addEventListener("click", () => act(`/api/pcs/${encodeURIComponent(pc.machine_id)}/resume`, {}, error));
+      return box;
+    }
+
+    async function act(url, body, error) {
+      error.textContent = "";
+      try {
+        await send(url, body);
+        await showList();
+      } catch (err) {
+        error.textContent = err.message;
+      }
+    }
+
+    function escapeText(value) {
+      return String(value).replace(/[&<>"']/g, (mark) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[mark]));
+    }
+
+    async function showList() {
+      const session = await fetch("/api/session").then((response) => response.json());
+      gate.innerHTML = "";
+      list.innerHTML = "";
+      if (!session.signed_in) {
+        loginBox(session.first_password || "");
+        return;
+      }
+      if (!session.configured) {
+        if (session.hosted) {
+          const note = document.createElement("p");
+          note.className = "error";
+          note.textContent = "Set SUPABASE_SERVICE_ROLE_KEY in the Vercel project settings.";
+          list.appendChild(note);
+          return;
+        }
+        list.appendChild(keyBox());
+        return;
+      }
+      const response = await fetch("/api/pcs");
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const note = document.createElement("p");
+        note.className = "error";
+        note.textContent = data.message || "The list could not be read.";
+        list.appendChild(note);
+        if (!session.hosted && (response.status === 503 || response.status === 400)) list.appendChild(keyBox());
+        return;
+      }
+      if (!data.pcs.length) {
+        const note = document.createElement("p");
+        note.className = "meta";
+        note.textContent = "No computer has opened Traiv AI yet.";
+        list.appendChild(note);
+        return;
+      }
+      for (const pc of data.pcs) list.appendChild(card(pc, data.posts_visible));
+    }
+
+    showList();
+  </script>
+</body>
+</html>
