@@ -13,8 +13,6 @@
     .kicker { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #0f6a74; }
     h1 { font-size: 28px; letter-spacing: -0.02em; margin: 0; }
     p.lead { color: #5c727a; margin: 8px 0 0; max-width: 520px; }
-    #intro { max-height: 160px; overflow: hidden; transition: max-height 0.18s ease, opacity 0.18s ease; }
-    #intro.away { max-height: 0; opacity: 0; }
     form.card, .setup { background: white; border: 1px solid #d5dee4; border-radius: 14px; padding: 20px; max-width: 420px; box-shadow: 0 8px 24px rgba(22, 50, 60, 0.06); }
     label { display: block; font-size: 13px; margin-bottom: 6px; }
     input { width: 100%; box-sizing: border-box; border: 1px solid #d5dee4; border-radius: 8px; padding: 8px 10px; font: inherit; background: white; }
@@ -476,12 +474,6 @@
       }
       row.append(back, title);
     }
-
-    window.addEventListener("scroll", () => {
-      const intro = document.getElementById("intro");
-      if (!intro) return;
-      intro.classList.toggle("away", !logsMachine() && window.scrollY > 24);
-    }, { passive: true });
 
     openPage();
   </script>
