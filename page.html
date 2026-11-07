@@ -45,8 +45,19 @@
     .btns { display: flex; gap: 8px; flex: 0 0 auto; }
     .actions button, .btns a { white-space: nowrap; height: 38px; padding: 0 14px; box-sizing: border-box; }
     .btns a { display: inline-flex; align-items: center; background: white; color: #16323c; border: 1px solid #d5dee4; border-radius: 8px; text-decoration: none; }
-    a.back { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; margin: 0 0 14px; background: white; color: #16323c; border: 1px solid #d5dee4; border-radius: 999px; text-decoration: none; }
+    a.back { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; margin: 0 0 14px; background: white; color: #16323c; border: 1px solid #d5dee4; border-radius: 999px; text-decoration: none; flex: none; }
     a.back[hidden] { display: none; }
+    .heading-row { display: flex; align-items: center; gap: 10px; }
+    .heading-row a.back { margin: 0; }
+    .heading-row h1 { min-width: 0; }
+    .logcount { margin: 16px 0 0; color: #5c727a; }
+    .filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
+    .filters button { height: 34px; border-radius: 999px; padding: 0 12px; background: white; color: #16323c; border: 1px solid #d5dee4; }
+    .filters button[hidden] { display: none; }
+    .filters button.on { background: #0f6a74; color: white; border-color: #0f6a74; }
+    .filters label { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 13px; }
+    .filters input { width: auto; height: 34px; }
+    .filters button.clear { width: 28px; height: 28px; padding: 0; border-radius: 999px; color: #9c3b3b; font-size: 16px; line-height: 1; }
     .logpage { display: flex; flex-direction: column; gap: 10px; margin-top: 22px; }
     .logpage .log { background: white; border: 1px solid #d5dee4; border-radius: 14px; padding: 14px 16px; box-shadow: 0 8px 24px rgba(22, 50, 60, 0.05); }
     .log p { margin: 4px 0 0; }
@@ -54,7 +65,7 @@
     .code { color: #16323c; font-weight: 600; letter-spacing: 0.02em; }
     @media (max-width: 640px) {
       main { padding: 20px 14px 32px; }
-      .toolbar { align-items: stretch; flex-direction: column; margin-top: 16px; }
+      .toolbar { align-items: stretch; flex-direction: column; margin-top: 16px; padding-inline: 12px; }
       .toolbar input { width: 100%; }
       #grid { grid-template-columns: minmax(0, 1fr); padding-inline: 12px; }
       .card { padding: 12px; }
@@ -224,8 +235,15 @@
       return match ? match[1] : "";
     }
 
-    function renderLogs(rows) {
-      if (!rows.length) return `<p class="facts">No warnings or errors from this computer yet.</p>`;
+    function logDay(value) {
+      if (!value) return "";
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return "";
+      return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit" }).format(date);
+    }
+
+    function renderLogs(rows, total) {
+      if (!rows.length) return `<p class="facts">${total ? "Nothing matches these filters." : "No warnings or errors from this computer yet."}</p>`;
       const items = rows.map((row) => {
         const kind = row.level === "error" ? "ended" : "stopped";
         const name = row.level === "error" ? "Error" : "Warning";
@@ -234,7 +252,7 @@
         const codeMark = code ? `<span class="code">${escapeText(code)}</span>` : "";
         return `<div class="log"><div class="log-head"><span class="pill ${kind}">${name}</span>${codeMark}<span>${escapeText(row.area)}</span><span>${when(row.when)}</span></div><p>${escapeText(text)}</p></div>`;
       }).join("");
-      const note = rows.length === 40 ? `<p class="facts">Showing the latest 40.</p>` : "";
+      const note = total === 40 && rows.length === total ? `<p class="facts">Showing the latest 40.</p>` : "";
       return items + note;
     }
 
@@ -358,6 +376,7 @@
       const session = await fetch("/api/session").then((response) => response.json());
       gate.innerHTML = "";
       list.innerHTML = "";
+      placeHeading();
       document.getElementById("back").hidden = false;
       document.getElementById("title").textContent = "Logs";
       document.getElementById("lead").textContent = "Warnings and errors from this computer.";
@@ -401,10 +420,61 @@
         return;
       }
       const rows = logsData.logs || [];
+      const count = document.createElement("p");
+      count.className = "logcount";
+      const filters = document.createElement("div");
+      filters.className = "filters";
+      filters.innerHTML = `<button type="button" class="on" data-level="">All</button><button type="button" data-level="error">Error</button><button type="button" data-level="warning">Warning</button><label>Date<input type="date" data-day><button type="button" class="clear" data-clear hidden aria-label="Clear date">\u00d7</button></label>`;
       const panel = document.createElement("div");
       panel.className = "logpage";
-      panel.innerHTML = renderLogs(rows);
+      const choice = { level: "", day: "" };
+      const paint = () => {
+        const shown = rows.filter((row) => {
+          if (choice.level && row.level !== choice.level) return false;
+          if (choice.day && logDay(row.when) !== choice.day) return false;
+          return true;
+        });
+        filters.querySelector("[data-clear]").hidden = !choice.day;
+        const total = rows.length;
+        const visible = shown.length;
+        count.textContent = visible === total
+          ? (total === 1 ? "1 log" : total + " logs")
+          : visible + " of " + total + (total === 1 ? " log" : " logs");
+        panel.innerHTML = renderLogs(shown, rows.length);
+      };
+      filters.addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-level]");
+        if (!button) return;
+        choice.level = button.dataset.level;
+        filters.querySelectorAll("button[data-level]").forEach((item) => item.classList.toggle("on", item === button));
+        paint();
+      });
+      filters.querySelector("[data-day]").addEventListener("change", (event) => {
+        choice.day = event.target.value;
+        paint();
+      });
+      filters.querySelector("[data-clear]").addEventListener("click", () => {
+        choice.day = "";
+        filters.querySelector("[data-day]").value = "";
+        paint();
+      });
+      list.appendChild(count);
+      list.appendChild(filters);
       list.appendChild(panel);
+      paint();
+    }
+
+    function placeHeading() {
+      const intro = document.getElementById("intro");
+      const back = document.getElementById("back");
+      const title = document.getElementById("title");
+      let row = intro.querySelector(".heading-row");
+      if (!row) {
+        row = document.createElement("div");
+        row.className = "heading-row";
+        intro.insertBefore(row, title);
+      }
+      row.append(back, title);
     }
 
     window.addEventListener("scroll", () => {
